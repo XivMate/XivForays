@@ -37,7 +37,9 @@ public sealed class Plugin : IDalamudPlugin
     internal static IPluginLog Log { get; private set; } = null!;
 
     [PluginService]
-    internal static IFateTable FateTable { get; private set; } = null!;
+    internal static IFateTable FateTable { get; private set; } = null!;  
+    [PluginService]
+    internal static IObjectTable ObjectTable { get; private set; } = null!;
 
     [PluginService]
     internal static IFramework Framework { get; private set; } = null!;
@@ -101,6 +103,7 @@ public sealed class Plugin : IDalamudPlugin
     private ServiceCollection ConfigureServices()
     {
         var services = new ServiceCollection();
+        services.AddAutoMapper(typeof(Plugin).Assembly);
         services.AddSingleton(this);
         services.AddSingleton(TextureProvider);
         services.AddSingleton(ChatGui);
@@ -110,6 +113,7 @@ public sealed class Plugin : IDalamudPlugin
         services.AddSingleton(DataManager);
         services.AddSingleton(Framework);
         services.AddSingleton(FateTable);
+        services.AddSingleton(ObjectTable);
         services.AddSingleton(Log);
         services.AddSingleton<FateModule>();
         services.AddSingleton<SchedulerService>();

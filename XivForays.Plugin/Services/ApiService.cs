@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -30,5 +31,10 @@ public class ApiService(IDalamudPluginInterface dalamudPluginInterface, IPluginL
     public async Task UploadFate(Fate fate)
     {
         await PostRequest(fate, $"fateended");
+    }
+
+    public async Task UploadEnemyPosition(List<EnemyPosition> enemy)
+    {
+        await PostRequest(enemy, $"enemyposition");
     }
 }
