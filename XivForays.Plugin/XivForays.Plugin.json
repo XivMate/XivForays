@@ -1,0 +1,12 @@
+{
+  "Author": "XivMate",
+  "Name": "XivMate Foray Data Gathering",
+  "Punchline": "Crowdsourced data for Adventuring Forays",
+  "Description": "Crowdsourcing data for forays (Eureka, Bozja), /xivmate for settings",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "foray",
+    "eureka",
+    "bozja"
+  ]
+}

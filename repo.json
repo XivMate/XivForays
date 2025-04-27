@@ -1,0 +1,25 @@
+[
+  {
+    "Author": "XivMate",
+    "Name": "XivForays",
+    "Punchline": "Foray stuff.",
+    "Description": "Foray stuff.",
+    "InternalName": "XivForays.Plugin",
+    "AssemblyVersion": "0.0.0.1",
+    "TestingAssemblyVersion": "0.0.0.1",
+    "RepoUrl": "https://github.com/XivMate/XivForays.Plugin",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 11,
+    "TestingDalamudApiLevel": 11,
+    "IsHide": "False",
+    "IsTestingExclusive": "False",
+    "DownloadCount": 0,
+    "LastUpdate": 0,
+    "LoadPriority": 100,
+    "LoadRequiredState": 2,
+    "LoadSync": true,
+    "DownloadLinkInstall": "https://github.com/XivMate/XivForays.Plugin/releases/download/0.0.0.4/XivForays.Plugin.zip",
+    "DownloadLinkTesting": "https://github.com/XivMate/XivForays.Plugin/releases/download/0.0.0.4/XivForays.Plugin.zip",
+    "DownloadLinkUpdate": "https://github.com/XivMate/XivForays.Plugin/releases/download/0.0.0.4/XivForays.Plugin.zip"
+  }
+]
