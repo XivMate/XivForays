@@ -11,17 +11,21 @@ namespace XivMate.DataGathering.Forays.Dalamud.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
+    private readonly IPluginLog log;
     private readonly IEnumerable<ITab> tabs;
     private Configuration.Configuration Configuration;
 
-    public ConfigWindow(Plugin plugin, IEnumerable<ITab> tabs, IPluginLog log) : base("XivForays Settings")
+    public ConfigWindow(Plugin plugin, IEnumerable<ITab> tabs, IPluginLog log) :
+        base("XivForays Settings")
     {
-        this.tabs = tabs;
-        log.Info($"Config Window has {tabs?.Count()} tabs");
-        Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
-                ImGuiWindowFlags.NoScrollWithMouse;
+        this.log = log;
+        this.tabs = tabs.OrderBy(t => t.Index).ToList();
+        log.Info($"Config Window has {this.tabs?.Count()} tabs");
+        foreach (var tab in this.tabs)
+        {
+            log.Info($"Tab: {tab.TabTitle} - Index: {tab.Index}");
+        }   
 
-        Size = new Vector2(600, 250);
         SizeCondition = ImGuiCond.Always;
 
         Configuration = plugin.Configuration;
@@ -33,7 +37,11 @@ public class ConfigWindow : Window, IDisposable
     {
         ImGui.BeginTabBar("#tabs");
         foreach (var tab in tabs)
+        {
+            log.Info($"Rendering tab {tab.TabTitle} index {tab.Index}");
             tab.DrawTab(Configuration);
+        }
+
         ImGui.EndTabBar();
     }
 }

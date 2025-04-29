@@ -23,7 +23,7 @@ public interface ITab
     /// <param name="configuration">Plugin configuration</param>
     public void DrawTab(Configuration.Configuration configuration)
     {
-        if (ImGui.BeginTabItem(TabTitle))
+        if (ImGui.BeginTabItem($"{TabTitle}###{Index}"))
         {
             Draw(configuration);
             ImGui.EndTabItem();
