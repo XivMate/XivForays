@@ -102,7 +102,9 @@ public class EnemyTrackingService
         }
         catch (Exception ex)
         {
-            log.Error($"Error in UpdateAndGetEnemies: {ex.Message}");
+            log.Error($"Error in UpdateAndGetEnemies: {ex.Message}, {ex.StackTrace}");
+            log.Error(ex.InnerException?.Message);
+            
             return new Dictionary<ulong, EnemyPosition>();
         }
     }
@@ -297,9 +299,10 @@ public class EnemyTrackingService
         log.Debug($"Found {outdatedEnemies.Count} outdated enemies to remove of {_enemies.Count} total enemies");
         foreach (var enemyId in outdatedEnemies)
         {
+            var outdatedEnemy = _enemies[enemyId];
             if (_enemies.Remove(enemyId))
             {
-                log.Debug($"Removed outdated enemy: {_enemies[enemyId].MobName} (ID: {_enemies[enemyId].MobIngameId})");
+                log.Debug($"Removed outdated enemy: {outdatedEnemy.MobName} (ID: {outdatedEnemy.MobIngameId})");
             }
         }
     }
