@@ -7,6 +7,7 @@ using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;
 using XivMate.DataGathering.Forays.Dalamud.Extensions;
 using XivMate.DataGathering.Forays.Dalamud.Gathering;
+using XivMate.DataGathering.Forays.Dalamud.Gathering.Enemy;
 using XivMate.DataGathering.Forays.Dalamud.Gathering.Fate;
 using XivMate.DataGathering.Forays.Dalamud.Services;
 using XivMate.DataGathering.Forays.Dalamud.Windows;
@@ -27,6 +28,7 @@ public sealed class Plugin : IDalamudPlugin
 
     [PluginService]
     internal static IClientState ClientState { get; private set; } = null!;
+
     [PluginService]
     internal static IChatGui ChatGui { get; private set; } = null!;
 
@@ -37,7 +39,8 @@ public sealed class Plugin : IDalamudPlugin
     internal static IPluginLog Log { get; private set; } = null!;
 
     [PluginService]
-    internal static IFateTable FateTable { get; private set; } = null!;  
+    internal static IFateTable FateTable { get; private set; } = null!;
+
     [PluginService]
     internal static IObjectTable ObjectTable { get; private set; } = null!;
 
@@ -55,14 +58,15 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
-        Configuration = PluginInterface.GetPluginConfig() as Configuration.Configuration ?? new Configuration.Configuration();
+        Configuration = PluginInterface.GetPluginConfig() as Configuration.Configuration ??
+                        new Configuration.Configuration();
 
         var resourcesPath = PluginInterface.AssemblyLocation.Directory?.FullName!;
 
         SetupServices();
         InitializeModules();
 
-        MainWindow = new MainWindow(this, provider.GetService<TerritoryService>());
+        MainWindow = provider.GetService<MainWindow>(); //new MainWindow(this, provider.GetService<TerritoryService>());
 
         RegisterCommands();
 
@@ -74,7 +78,6 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow = new ConfigWindow(this, tabs, Log);
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
-        
     }
 
     private void SetupServices()
@@ -104,6 +107,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         var services = new ServiceCollection();
         services.AddAutoMapper(typeof(Plugin).Assembly);
+        services.AddSingleton<MainWindow>();
         services.AddSingleton(this);
         services.AddSingleton(TextureProvider);
         services.AddSingleton(ChatGui);
@@ -119,6 +123,8 @@ public sealed class Plugin : IDalamudPlugin
         services.AddSingleton<SchedulerService>();
         services.AddSingleton<TerritoryService>();
         services.AddSingleton<ApiService>();
+        services.AddSingleton<EnemyTrackingService>();
+        services.AddSingleton<ForayService>();
         services.AddAllTypesImplementing<ITab>();
         services.AddAllTypesImplementing<IModule>();
         return services;
@@ -139,7 +145,10 @@ public sealed class Plugin : IDalamudPlugin
     private void OnCommand(string command, string args)
     {
         // in response to the slash command, just toggle the display status of our main ui
-        ToggleMainUI();
+        if (args == "config")
+            ToggleConfigUI();
+        else
+            ToggleMainUI();
     }
 
     private void DrawUI() => WindowSystem.Draw();

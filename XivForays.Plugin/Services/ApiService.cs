@@ -22,8 +22,10 @@ public class ApiService(IDalamudPluginInterface dalamudPluginInterface, IPluginL
             baseUrl += "/";
         var url = $"{baseUrl}{endpoint}";
         var client = new HttpClient();
+        client.DefaultRequestHeaders.Add($"User-Agent", $"XivForays/{dalamudPluginInterface.Manifest.AssemblyVersion}");
         client.DefaultRequestHeaders.Add($"X-API-Key", config.SystemConfiguration.ApiKey);
         log.Debug($"Sending request to {url} with payload {JsonConvert.SerializeObject(obj)}");
+        log.Debug($"User-Agent: {client.DefaultRequestHeaders.UserAgent}");
         var result = await client.PostAsJsonAsync(url, obj);
         result.EnsureSuccessStatusCode();
     }

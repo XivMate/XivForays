@@ -14,13 +14,15 @@ public class MainWindow : Window, IDisposable
 {
     private Plugin Plugin;
     private readonly TerritoryService territoryService;
+    private readonly ForayService forayService;
 
-    public MainWindow(Plugin plugin, TerritoryService territoryService)
+    public MainWindow(Plugin plugin, TerritoryService territoryService, ForayService forayService)
         : base("XivForays")
     {
         Plugin = plugin;
         Size = new Vector2(600, 250);
         this.territoryService = territoryService;
+        this.forayService = forayService;
     }
 
 
@@ -71,15 +73,24 @@ public class MainWindow : Window, IDisposable
                 if (Plugin.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
                 {
                     ImGui.TextUnformatted(
-                        $"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name.ExtractText()}\"");
+                        $"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name.ExtractText()}\" - default territory map: {territoryRow.Map.RowId}");
+                    
                 }
                 else
                 {
                     ImGui.TextUnformatted("Invalid territory.");
                 }
-                var isInForay = territoryService.ForayIds
-                    .Any(t => t.RowId == territoryId);
-                ImGui.TextUnformatted($"Is in foray content: {isInForay}");
+                if(Plugin.DataManager.GetExcelSheet<MapType>().TryGetRow(Plugin.ClientState.MapId, out var mapRow))
+                {
+                    ImGui.TextUnformatted(
+                        $"(Map {mapRow.RowId})");
+                }
+                else
+                {
+                    ImGui.TextUnformatted($"Invalid map. ({Plugin.ClientState.MapId})");
+                }
+                var isInForay = forayService.IsInRecordableTerritory();
+                ImGui.TextUnformatted($"Is in recordable territory: {isInForay}");
             }
         }
     }

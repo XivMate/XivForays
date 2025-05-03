@@ -62,25 +62,39 @@ jobs:
                   asset_name: XivForays.Plugin.zip
                   asset_content_type: application/zip
 
-            - name: Write out repo.json
+            - name: Commit repo.json
               run: |
+                  # Configure Git user
+                  git config --global user.name "Actions User"
+                  git config --global user.email "actions@github.com"
+
+                  # Fetch the latest state of the remote master branch
+                  git fetch origin master
+
+                  # Checkout the master branch
+                  git checkout master
+
+                  # Reset the local master branch to exactly match the remote master
+                  # This discards any local commits on master and ensures it's in sync
+                  git reset --hard origin/master
+
+                  # --- Your existing logic to modify repo.json ---
                   $verT = '${{ github.ref_name }}'
                   $ver = $verT -replace 'testing_'
                   $path = './repo.json'
                   $json = Get-Content -Raw $path | ConvertFrom-Json
-                  $json[0].TestingAssemblyVersion = $ver          
+                  $json[0].TestingAssemblyVersion = $ver
                   $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/XivForays.Plugin.zip',"$verT/XivForays.Plugin.zip"
                   $content = $json | ConvertTo-Json -AsArray
                   set-content -Path $path -Value $content
+                  # --- End of repo.json modification logic ---
 
-            - name: Commit repo.json
-              run: |
-                  git config --global user.name "Actions User"
-                  git config --global user.email "actions@github.com"
-                  git fetch origin master
-                  git branch -f master ${{ github.sha }}
-                  git checkout master
+                  # Add the modified file
                   git add repo.json
+
+                  # Commit the changes (use || true to prevent failure if no changes are made)
                   git commit -m "[CI] Updating repo.json for ${{ github.ref_name }}" || true
-                  git pull
+
+                  # Push the changes to the remote master branch
+                  # This should now be a fast-forward push as the local master is up-to-date
                   git push origin master
