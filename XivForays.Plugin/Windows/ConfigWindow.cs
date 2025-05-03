@@ -38,7 +38,6 @@ public class ConfigWindow : Window, IDisposable
         ImGui.BeginTabBar("#tabs");
         foreach (var tab in tabs)
         {
-            log.Info($"Rendering tab {tab.TabTitle} index {tab.Index}");
             tab.DrawTab(Configuration);
         }
 

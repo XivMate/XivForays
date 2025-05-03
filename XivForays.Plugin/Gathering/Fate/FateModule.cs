@@ -21,36 +21,36 @@ public class FateModule(
     ApiService apiService)
     : IModule
 {
-    private bool _isInRecordableTerritory = false;
-    private Guid _instanceGuid = Guid.NewGuid();
-    private readonly Dictionary<uint, Models.Fate> _fates = new();
-    private readonly ConcurrentQueue<Models.Fate> _fateQueue = new();
+    private bool isInRecordableTerritory;
+    private Guid instanceGuid = Guid.NewGuid();
+    private readonly Dictionary<uint, Models.Fate> fates = new();
+    private readonly ConcurrentQueue<Models.Fate> fateQueue = new();
 
-    private bool _enabled = false;
-    public bool Enabled => _enabled;
+    private bool enabled = false;
+    public bool Enabled => enabled;
 
-    public IEnumerable<Models.Fate> ActiveFates => _fates.Values.ToList();
+    public IEnumerable<Models.Fate> ActiveFates => fates.Values.ToList();
 
     /// <summary>
     /// Loads configuration and enables/disables the module accordingly
     /// </summary>
     public void LoadConfig(Configuration.Configuration configuration)
     {
-        if (configuration.CanCrowdsourceData&& !_enabled)
+        if (configuration.CanCrowdsourceData&& !enabled)
         {
             clientState.TerritoryChanged += OnTerritoryChanged;
             schedulerService.ScheduleOnFrameworkThread(FateTick, 500);
             schedulerService.ScheduleOnNewThread(FateUpload, 2500);
             OnTerritoryChanged(clientState.TerritoryType);
-            _enabled = true;
-            _fates.Clear();
+            enabled = true;
+            fates.Clear();
         }
-        else if (_enabled && !configuration.CanCrowdsourceData)
+        else if (enabled && !configuration.CanCrowdsourceData)
         {
             clientState.TerritoryChanged -= OnTerritoryChanged;
             schedulerService.CancelScheduledTask(FateTick);
             schedulerService.CancelScheduledTask(FateUpload);
-            _enabled = false;
+            enabled = false;
         }
     }
 
@@ -76,20 +76,20 @@ public class FateModule(
 
             if (isForayTerritory)
             {
-                _isInRecordableTerritory = true;
-                _instanceGuid = Guid.NewGuid();
+                isInRecordableTerritory = true;
+                instanceGuid = Guid.NewGuid();
                 log.Info(
-                    $"Foray territory: {territoryName}, local guid: {_instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
+                    $"Foray territory: {territoryName}, local guid: {instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
             }
             else
             {
                 log.Info($"Not Foray territory: {territoryName}");
-                _isInRecordableTerritory = false;
+                isInRecordableTerritory = false;
             }
         }
         else
         {
-            _isInRecordableTerritory = false;
+            isInRecordableTerritory = false;
         }
     }
 
@@ -98,7 +98,7 @@ public class FateModule(
     /// </summary>
     private void FateTick()
     {
-        if (clientState.LocalPlayer == null || !_isInRecordableTerritory)
+        if (clientState.LocalPlayer == null || !isInRecordableTerritory)
         {
             return;
         }
@@ -121,7 +121,7 @@ public class FateModule(
     {
         foreach (var fate in fateTable)
         {
-            if (_fates.TryGetValue(fate.FateId, out var modelFate))
+            if (fates.TryGetValue(fate.FateId, out var modelFate))
             {
                 if (fate.State is FateState.Ended or FateState.Failed)
                 {
@@ -143,13 +143,13 @@ public class FateModule(
                     Z = fate.Position.Z,
                     Radius = fate.Radius,
                     StartedAt = fate.StartTimeEpoch,
-                    InstanceId = _instanceGuid,
+                    InstanceId = instanceGuid,
                     TerritoryId = Convert.ToInt32(fate.TerritoryType.Value.RowId),
                     MapId = (int)clientState.MapId,
                     LevelId = fate.Level
                 };
 
-                _fates.Add(fate.FateId, modelFate);
+                fates.Add(fate.FateId, modelFate);
             }
         }
     }
@@ -159,13 +159,13 @@ public class FateModule(
     /// </summary>
     private void RemoveNonExistentFates()
     {
-        var fatesToRemove = _fates.Keys
+        var fatesToRemove = fates.Keys
                                   .Where(fateId => fateTable.All(existingFate => existingFate.FateId != fateId))
                                   .ToList();
 
         foreach (var fateId in fatesToRemove)
         {
-            if (_fates.TryGetValue(fateId, out var removedFate))
+            if (fates.TryGetValue(fateId, out var removedFate))
             {
                 RemoveFate(removedFate);
             }
@@ -177,13 +177,13 @@ public class FateModule(
     /// </summary>
     private void RemoveFate(Models.Fate modelFate)
     {
-        if (_fates.Remove(modelFate.FateId))
+        if (fates.Remove(modelFate.FateId))
         {
             modelFate.EndedAt = DateTime.UtcNow.ToUnixTime();
 
             if (modelFate.TerritoryId == clientState.TerritoryType)
             {
-                _fateQueue.Enqueue(modelFate);
+                fateQueue.Enqueue(modelFate);
             }
 
             log.Info($"Fate ended: {modelFate.Name}, at: {modelFate.EndedAt}");
@@ -198,7 +198,7 @@ public class FateModule(
     /// </summary>
     private void FateUpload()
     {
-        if (_fateQueue.TryDequeue(out var fate))
+        if (fateQueue.TryDequeue(out var fate))
         {
             try
             {
@@ -206,7 +206,7 @@ public class FateModule(
             }
             catch (Exception ex)
             {
-                _fateQueue.Enqueue(fate);
+                fateQueue.Enqueue(fate);
                 log.Warning($"Error uploading {fate.Name}: {ex.Message}");
             }
         }

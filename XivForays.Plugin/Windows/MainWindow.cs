@@ -77,9 +77,18 @@ public class MainWindow : Window, IDisposable
                 {
                     ImGui.TextUnformatted("Invalid territory.");
                 }
+                if(Plugin.DataManager.GetExcelSheet<MapType>().TryGetRow(Plugin.ClientState.MapId, out var mapRow))
+                {
+                    ImGui.TextUnformatted(
+                        $"(Map {mapRow.RowId})");
+                }
+                else
+                {
+                    ImGui.TextUnformatted($"Invalid map. ({Plugin.ClientState.MapId})");
+                }
                 var isInForay = territoryService.ForayIds
                     .Any(t => t.RowId == territoryId);
-                ImGui.TextUnformatted($"Is in foray content: {isInForay}");
+                ImGui.TextUnformatted($"Is in foray content: {isInForay}, allowed ids: {string.Join(", ", territoryService.ForayIds.Select(t => t.RowId))}");
             }
         }
     }
