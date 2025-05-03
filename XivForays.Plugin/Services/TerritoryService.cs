@@ -26,7 +26,7 @@ public class TerritoryService : IDisposable
         this.dataManager = dataManager;
     }
 
-    public TerritoryType? GetTerritoryForId(uint territoryId) =>
+    public TerritoryType? GetTerritoryForId(ushort territoryId) =>
         dataManager.GameData.GetExcelSheet<TerritoryType>()
                    ?.FirstOrDefault((territory) => territory.RowId == territoryId)!;
 

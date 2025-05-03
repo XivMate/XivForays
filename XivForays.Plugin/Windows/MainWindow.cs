@@ -14,13 +14,15 @@ public class MainWindow : Window, IDisposable
 {
     private Plugin Plugin;
     private readonly TerritoryService territoryService;
+    private readonly ForayService forayService;
 
-    public MainWindow(Plugin plugin, TerritoryService territoryService)
+    public MainWindow(Plugin plugin, TerritoryService territoryService, ForayService forayService)
         : base("XivForays")
     {
         Plugin = plugin;
         Size = new Vector2(600, 250);
         this.territoryService = territoryService;
+        this.forayService = forayService;
     }
 
 
@@ -71,7 +73,8 @@ public class MainWindow : Window, IDisposable
                 if (Plugin.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
                 {
                     ImGui.TextUnformatted(
-                        $"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name.ExtractText()}\"");
+                        $"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name.ExtractText()}\" - default territory map: {territoryRow.Map.RowId}");
+                    
                 }
                 else
                 {
@@ -86,9 +89,8 @@ public class MainWindow : Window, IDisposable
                 {
                     ImGui.TextUnformatted($"Invalid map. ({Plugin.ClientState.MapId})");
                 }
-                var isInForay = territoryService.ForayIds
-                    .Any(t => t.RowId == territoryId);
-                ImGui.TextUnformatted($"Is in foray content: {isInForay}, allowed ids: {string.Join(", ", territoryService.ForayIds.Select(t => t.RowId))}");
+                var isInForay = forayService.IsInRecordableTerritory();
+                ImGui.TextUnformatted($"Is in recordable territory: {isInForay}");
             }
         }
     }

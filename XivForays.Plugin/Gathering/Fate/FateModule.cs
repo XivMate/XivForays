@@ -18,7 +18,8 @@ public class FateModule(
     SchedulerService schedulerService,
     TerritoryService territoryService,
     IPluginLog log,
-    ApiService apiService)
+    ApiService apiService,
+    ForayService forayService)
     : IModule
 {
     private bool isInRecordableTerritory;
@@ -36,7 +37,7 @@ public class FateModule(
     /// </summary>
     public void LoadConfig(Configuration.Configuration configuration)
     {
-        if (configuration.CanCrowdsourceData&& !enabled)
+        if (configuration.CanCrowdsourceData && !enabled)
         {
             clientState.TerritoryChanged += OnTerritoryChanged;
             schedulerService.ScheduleOnFrameworkThread(FateTick, 500);
@@ -70,16 +71,11 @@ public class FateModule(
         if (territory?.PlaceName.ValueNullable.HasValue ?? false)
         {
             string territoryName = territory.Value.PlaceName.Value.Name.ToString();
-            bool isForayTerritory = territoryName.Contains("Eureka") ||
-                                    territoryName.Contains("Zadnor") ||
-                                    territoryName.Contains("Bozjan Southern Front");
-
-            if (isForayTerritory)
+            if (forayService.IsInRecordableTerritory())
             {
-                isInRecordableTerritory = true;
+                log.Info($"Foray territory: {territoryName}");
                 instanceGuid = Guid.NewGuid();
-                log.Info(
-                    $"Foray territory: {territoryName}, local guid: {instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
+                isInRecordableTerritory = true;
             }
             else
             {
@@ -160,8 +156,8 @@ public class FateModule(
     private void RemoveNonExistentFates()
     {
         var fatesToRemove = fates.Keys
-                                  .Where(fateId => fateTable.All(existingFate => existingFate.FateId != fateId))
-                                  .ToList();
+                                 .Where(fateId => fateTable.All(existingFate => existingFate.FateId != fateId))
+                                 .ToList();
 
         foreach (var fateId in fatesToRemove)
         {

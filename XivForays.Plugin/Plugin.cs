@@ -66,7 +66,7 @@ public sealed class Plugin : IDalamudPlugin
         SetupServices();
         InitializeModules();
 
-        MainWindow = new MainWindow(this, provider.GetService<TerritoryService>());
+        MainWindow = provider.GetService<MainWindow>(); //new MainWindow(this, provider.GetService<TerritoryService>());
 
         RegisterCommands();
 
@@ -107,6 +107,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         var services = new ServiceCollection();
         services.AddAutoMapper(typeof(Plugin).Assembly);
+        services.AddSingleton<MainWindow>();
         services.AddSingleton(this);
         services.AddSingleton(TextureProvider);
         services.AddSingleton(ChatGui);
@@ -123,6 +124,7 @@ public sealed class Plugin : IDalamudPlugin
         services.AddSingleton<TerritoryService>();
         services.AddSingleton<ApiService>();
         services.AddSingleton<EnemyTrackingService>();
+        services.AddSingleton<ForayService>();
         services.AddAllTypesImplementing<ITab>();
         services.AddAllTypesImplementing<IModule>();
         return services;
