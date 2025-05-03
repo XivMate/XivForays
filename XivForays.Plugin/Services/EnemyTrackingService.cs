@@ -17,8 +17,8 @@ public class EnemyTrackingService
     private readonly IObjectTable objectTable;
     private readonly IPluginLog log;
     private readonly TerritoryService territoryService;
+    private readonly ForayService forayService;
 
-    private bool _isInRecordableTerritory = false;
     private Guid _instanceGuid = Guid.NewGuid();
 
     private readonly Dictionary<ulong, EnemyPosition> _enemies = new();
@@ -30,19 +30,21 @@ public class EnemyTrackingService
         IClientState clientState,
         IObjectTable objectTable,
         IPluginLog log,
-        TerritoryService territoryService)
+        TerritoryService territoryService,
+        ForayService forayService)
     {
         this.clientState = clientState;
         this.objectTable = objectTable;
         this.log = log;
         this.territoryService = territoryService;
+        this.forayService = forayService;
 
         this.clientState.TerritoryChanged += OnTerritoryChanged;
         OnTerritoryChanged(clientState.TerritoryType);
     }
 
     /// <summary>
-    /// Handles territory changes and determines if the current territory is recordable
+    /// Handles territory changes and generates a new instance GUID when entering a new territory
     /// </summary>
     private void OnTerritoryChanged(ushort territoryId)
     {
@@ -51,32 +53,13 @@ public class EnemyTrackingService
             return;
         }
 
-        var territory = territoryService.GetTerritoryForId(territoryId);
-        log.Info($"Current territory id is: ", territoryId);
-        log.Info("Territory Placename is : ", territory?.PlaceName.ValueNullable);
-        if (territory?.PlaceName.ValueNullable.HasValue ?? false)
+        if (forayService.IsInRecordableTerritory())
         {
-            string territoryName = territory.Value.PlaceName.Value.Name.ToString();
-            bool isForayTerritory = territoryName.Contains("Eureka") ||
-                                    territoryName.Contains("Zadnor") ||
-                                    territoryName.Contains("Bozjan Southern Front");
-
-            if (isForayTerritory)
-            {
-                _isInRecordableTerritory = true;
-                _instanceGuid = Guid.NewGuid();
-                log.Info(
-                    $"[ETS] Foray territory: {territoryName}, local guid: {_instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
-            }
-            else
-            {
-                log.Info($"Not Foray territory: {territoryName}");
-                _isInRecordableTerritory = false;
-            }
-        }
-        else
-        {
-            _isInRecordableTerritory = false;
+            _instanceGuid = Guid.NewGuid();
+            var territory = territoryService.GetTerritoryForId(territoryId);
+            string territoryName = territory?.PlaceName.ValueNullable?.Name.ToString() ?? "Unknown";
+            log.Info(
+                $"[ETS] Foray territory: {territoryName}, local guid: {_instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
         }
     }
 
@@ -88,7 +71,8 @@ public class EnemyTrackingService
     /// <summary>
     /// Checks if the current territory is a recordable foray territory
     /// </summary>
-    public bool IsInRecordableTerritory() => _isInRecordableTerritory && clientState.IsLoggedIn && clientState.LocalPlayer != null;
+    public bool IsInRecordableTerritory() => forayService.IsInRecordableTerritory() && clientState.IsLoggedIn &&
+                                             clientState.LocalPlayer != null;
 
     /// <summary>
     /// Gets the current territory ID
@@ -137,8 +121,8 @@ public class EnemyTrackingService
     public List<EnemyPosition> GetCombatActiveEnemies()
     {
         return _enemies.Values
-            .Where(e => e.HasBeenInCombat)
-            .ToList();
+                       .Where(e => e.HasBeenInCombat)
+                       .ToList();
     }
 
     private int? GetLevel(IBattleChara battleChara)
@@ -213,6 +197,7 @@ public class EnemyTrackingService
                     _inCombatHistory[npcId] = true;
                     log.Debug($"NPC {battleNpc.Name} (ID: {npcId}) observed in combat for the first time");
                 }
+
                 elementType = GetElement(battleChara).GetValueOrDefault(-1).ToString();
 
                 // Process status effects
@@ -222,8 +207,9 @@ public class EnemyTrackingService
                     {
                         var status =
                             battleChara.StatusList.FirstOrDefault(s =>
-                                s.GameData.Value.Name.ToString() == "Adaptation" ||
-                                s.GameData.Value.Name.ToString() == "Mutation");
+                                                                      s.GameData.Value.Name.ToString() ==
+                                                                      "Adaptation" ||
+                                                                      s.GameData.Value.Name.ToString() == "Mutation");
 
                         if (status != null)
                         {
@@ -242,7 +228,7 @@ public class EnemyTrackingService
 
             // Check if this NPC has been in combat before
             var hasBeenInCombat = _inCombatHistory.ContainsKey(npcId) && _inCombatHistory[npcId];
-
+            var now = DateTime.UtcNow.ToUnixTime();
             // Update existing record or create new one
             if (_enemies.TryGetValue(npcId, out var enemyPosition))
             {
@@ -254,7 +240,7 @@ public class EnemyTrackingService
                 enemyPosition.IsMutated = isMutated;
                 enemyPosition.IsInCombat = isInCombat;
                 enemyPosition.HasBeenInCombat = hasBeenInCombat;
-                enemyPosition.TimeStamp = DateTime.UtcNow.ToUnixTime();
+                enemyPosition.TimeStamp = now;
                 enemyPosition.Element = elementType;
             }
             else
@@ -272,7 +258,7 @@ public class EnemyTrackingService
                     IsMutated = isMutated,
                     IsInCombat = isInCombat,
                     HasBeenInCombat = hasBeenInCombat,
-                    TimeStamp = DateTime.UtcNow.ToUnixTime(),
+                    TimeStamp = now,
                     Element = elementType,
                     TerritoryId = Convert.ToInt32(clientState.TerritoryType),
                     MapId = (int)clientState.MapId,
@@ -302,11 +288,13 @@ public class EnemyTrackingService
         //         log.Debug($"Removed outdated enemy: {enemy.Value.MobName} (ID: {enemy.Value.MobIngameId})");
         //     }
         // }
-        
+
         //Clear ANYTHING not in current objectTable
         var outdatedEnemies = _enemies.Keys
-            .Where(id => !objectTable.Any(obj => obj is IBattleNpc battleNpc && battleNpc.GameObjectId == id))
-            .ToList();
+                                      .Where(id => !objectTable.Any(obj => obj is IBattleNpc battleNpc &&
+                                                                           battleNpc.GameObjectId == id))
+                                      .ToList();
+        log.Debug($"Found {outdatedEnemies.Count} outdated enemies to remove of {_enemies.Count} total enemies");
         foreach (var enemyId in outdatedEnemies)
         {
             if (_enemies.Remove(enemyId))
@@ -314,7 +302,6 @@ public class EnemyTrackingService
                 log.Debug($"Removed outdated enemy: {_enemies[enemyId].MobName} (ID: {_enemies[enemyId].MobIngameId})");
             }
         }
-        
     }
 
     /// <summary>

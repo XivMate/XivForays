@@ -29,7 +29,6 @@ public class ForayService : IDisposable
 
     public bool IsInRecordableTerritory()
     {
-        log.Debug($"IsInRecordableTerritory: {clientState.IsLoggedIn} - {lastTerritory?.PlaceName.Value.Name.ExtractText()} - {lastTerritory?.Map.Value.RowId} - {clientState.MapId}");
         return clientState.IsLoggedIn && lastTerritory != null &&
                lastTerritory?.Map.Value.RowId == clientState.MapId;
     }

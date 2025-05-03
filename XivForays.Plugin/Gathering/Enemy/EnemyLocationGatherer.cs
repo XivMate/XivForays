@@ -57,33 +57,13 @@ public class EnemyLocationGatherer(
         {
             // Get latest enemy data from the tracking service
             var currentEnemies = enemyTrackingService.UpdateAndGetEnemies();
-
-            // Compare with last snapshot to find significant changes
-            if (_lastSnapshot.Count > 0)
+            if (currentEnemies.Any())
             {
-                var changedEnemies = DetectSignificantChanges(currentEnemies);
-
-                // Enqueue changed enemies for uploading if there are any
-                if (changedEnemies.Any())
-                {
-                    _enemyQueue.Enqueue(changedEnemies);
-                }
+                _enemyQueue.Enqueue(currentEnemies.Select(e => mapper.Map(e.Value, new EnemyPosition())).ToList());
             }
-
-            // Save the current snapshot for next comparison
-            _lastSnapshot = currentEnemies;
-
-            // Also periodically enqueue combat-active enemies for guaranteed updates
-            var combatActive = enemyTrackingService.GetCombatActiveEnemies();
-            if (combatActive.Any())
-            {
-                var cloned = combatActive.Select(e => mapper.Map(e, new EnemyPosition())).ToList();
-                _enemyQueue.Enqueue(cloned);
-            }
-        }
-        catch (Exception ex)
+        }catch (Exception ex)
         {
-            log.Error($"Error in EnemyTick: {ex.Message}");
+            log.Warning($"Error processing enemy data: {ex.Message}");
         }
     }
 
@@ -96,41 +76,8 @@ public class EnemyLocationGatherer(
 
         foreach (var (id, enemy) in currentEnemies)
         {
-            bool shouldReport = false;
-
-            // Check if the enemy is new or has significant changes
-            if (!_lastSnapshot.TryGetValue(id, out var previous))
-            {
-                // New enemy
-                shouldReport = true;
-            }
-            else
-            {
-                // Check for status changes
-                if (previous.IsAdapted != enemy.IsAdapted ||
-                    previous.IsMutated != enemy.IsMutated ||
-                    previous.IsInCombat != enemy.IsInCombat ||
-                    previous.HasBeenInCombat != enemy.HasBeenInCombat)
-                {
-                    shouldReport = true;
-                }
-
-                // Check for significant position change (more than 5 units)
-                var distanceSquared =
-                    Math.Pow(previous.X - enemy.X, 2) +
-                    Math.Pow(previous.Y - enemy.Y, 2) +
-                    Math.Pow(previous.Z - enemy.Z, 2);
-                if (distanceSquared > 25) // 5^2 = 25
-                {
-                    shouldReport = true;
-                }
-            }
-
-            if (shouldReport)
-            {
-                // Create a deep copy of the enemy data
-                changedEnemies.Add(mapper.Map(enemy, new EnemyPosition()));
-            }
+            // Create a deep copy of the enemy data
+            changedEnemies.Add(mapper.Map(enemy, new EnemyPosition()));
         }
 
         return changedEnemies;
