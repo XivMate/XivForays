@@ -6,6 +6,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using Newtonsoft.Json;
 using XivMate.DataGathering.Forays.Dalamud.Extensions;
 using XivMate.DataGathering.Forays.Dalamud.Models;
 
@@ -55,9 +56,12 @@ public class EnemyTrackingService
 
         if (forayService.IsInRecordableTerritory())
         {
-            _instanceGuid = Guid.NewGuid();
             var territory = territoryService.GetTerritoryForId(territoryId);
-            string territoryName = territory?.PlaceName.ValueNullable?.Name.ToString() ?? "Unknown";
+            var territoryName = territory?.PlaceName.ValueNullable?.Name.ToString() ?? "Unknown";
+            _instanceGuid = Guid.NewGuid();
+            _inCombatHistory.Clear();
+            _enemies.Clear();
+            
             log.Info(
                 $"[ETS] Foray territory: {territoryName}, local guid: {_instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
         }
@@ -104,6 +108,7 @@ public class EnemyTrackingService
         {
             log.Error($"Error in UpdateAndGetEnemies: {ex.Message}, {ex.StackTrace}");
             log.Error(ex.InnerException?.Message);
+            log.Error(JsonConvert.SerializeObject(ex));
             
             return new Dictionary<ulong, EnemyPosition>();
         }
@@ -167,7 +172,6 @@ public class EnemyTrackingService
     private void ProcessActiveEnemies()
     {
         // Create a list to track currently found enemies
-        var currentlyFoundEnemies = new HashSet<ulong>();
 
         foreach (var obj in objectTable)
         {
@@ -180,7 +184,6 @@ public class EnemyTrackingService
             if (battleNpc.CurrentHp <= 0) continue;
 
             var npcId = battleNpc.GameObjectId;
-            currentlyFoundEnemies.Add(npcId);
             // Check for adaptation and mutation status effects
             bool isAdapted = false;
             bool isMutated = false;
@@ -194,9 +197,8 @@ public class EnemyTrackingService
                 isInCombat = battleChara.TargetObject != null || battleChara.CurrentHp < battleChara.MaxHp;
 
                 // Update combat history if the NPC is in combat
-                if (isInCombat && !_inCombatHistory.ContainsKey(npcId))
+                if (isInCombat && _inCombatHistory.TryAdd(npcId, true))
                 {
-                    _inCombatHistory[npcId] = true;
                     log.Debug($"NPC {battleNpc.Name} (ID: {npcId}) observed in combat for the first time");
                 }
 
@@ -279,18 +281,6 @@ public class EnemyTrackingService
     /// </summary>
     private void RemoveOutdatedEnemies()
     {
-        // // Remove enemies that haven't been updated in 30 seconds
-        // var currentTime = DateTime.UtcNow.ToUnixTime();
-        // var outdatedEnemies = _enemies.Where(pair => currentTime - pair.Value.TimeStamp > 30).ToList();
-        //
-        // foreach (var enemy in outdatedEnemies)
-        // {
-        //     if (_enemies.Remove(enemy.Key))
-        //     {
-        //         log.Debug($"Removed outdated enemy: {enemy.Value.MobName} (ID: {enemy.Value.MobIngameId})");
-        //     }
-        // }
-
         //Clear ANYTHING not in current objectTable
         var outdatedEnemies = _enemies.Keys
                                       .Where(id => !objectTable.Any(obj => obj is IBattleNpc battleNpc &&

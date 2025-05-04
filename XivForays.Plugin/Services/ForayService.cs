@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 
@@ -22,15 +23,22 @@ public class ForayService : IDisposable
         this.clientState = clientState;
         this.log = log;
         clientState.TerritoryChanged += OnTerritoryChanged;
-        
+
         if (clientState.IsLoggedIn)
             this.OnTerritoryChanged(clientState.TerritoryType);
     }
 
     public bool IsInRecordableTerritory()
     {
-        return clientState.IsLoggedIn && lastTerritory != null &&
+        return clientState.IsLoggedIn && lastTerritory != null && IsForayTerritory(lastTerritory) &&
                lastTerritory?.Map.Value.RowId == clientState.MapId;
+    }
+
+    private bool IsForayTerritory(TerritoryType? territoryType)
+    {
+        var forayNames = new[] { "Eureka", "Zadnor", "Bozja Southern Front" };
+        return territoryType != null &&
+               forayNames.Any(p => territoryType?.PlaceName.Value.Name.ExtractText().Contains(p) ?? false);
     }
 
     private void OnTerritoryChanged(ushort obj)
