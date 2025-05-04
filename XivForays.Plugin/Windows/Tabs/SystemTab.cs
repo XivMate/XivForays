@@ -48,11 +48,12 @@ public class SystemTab(IPluginLog logger) : ITab
         }
 
         var apiKey = sysConfig.ApiKey ?? "";
-        if (ImGuiHelper.InputText("Api Key", ref apiKey))
+        if (ImGuiHelper.InputText("Api Key", ref apiKey,512U))
         {
             // Trim the same set of characters for the API Key as well
             var cleanedApiKey = apiKey.TrimEnd(charsToTrim);
             sysConfig.ApiKey = cleanedApiKey;
+            logger.Warning($"Setting API Key to {sysConfig.ApiKey}", cleanedApiKey);
             configuration.Save();
         }
     }

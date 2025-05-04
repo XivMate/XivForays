@@ -1,9 +1,11 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 using Microsoft.Extensions.DependencyInjection;
 using XivMate.DataGathering.Forays.Dalamud.Extensions;
 using XivMate.DataGathering.Forays.Dalamud.Gathering;
@@ -55,6 +57,7 @@ public sealed class Plugin : IDalamudPlugin
     private ServiceProvider provider;
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
+    private ApiKeyWindow ApiKeyWindow { get; set; }
 
     public Plugin()
     {
@@ -66,7 +69,12 @@ public sealed class Plugin : IDalamudPlugin
         SetupServices();
         InitializeModules();
 
-        MainWindow = provider.GetService<MainWindow>(); //new MainWindow(this, provider.GetService<TerritoryService>());
+        MainWindow =
+            provider?.GetService<MainWindow>() ??
+            throw new InvalidOperationException(); //new MainWindow(this, provider.GetService<TerritoryService>());
+        ApiKeyWindow =
+            provider.GetService<ApiKeyWindow>() ??
+            throw new InvalidOperationException(); //new MainWindow(this, provider.GetService<TerritoryService>());
 
         RegisterCommands();
 
@@ -76,8 +84,21 @@ public sealed class Plugin : IDalamudPlugin
 
         var tabs = provider.GetServices<ITab>();
         ConfigWindow = new ConfigWindow(this, tabs, Log);
+        ApiKeyWindow = new ApiKeyWindow(this, Log);
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(ApiKeyWindow);
+
+        if (string.IsNullOrWhiteSpace(Configuration.SystemConfiguration.ApiKey))
+        {
+            Log.Info("No API key found, opening API key window");
+            if (!ApiKeyWindow.IsOpen)
+                ApiKeyWindow.Toggle();
+        }
+        else
+        {
+            Log.Info($"API key found: '{Configuration.SystemConfiguration.ApiKey}'");
+        }
     }
 
     private void SetupServices()
@@ -107,7 +128,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         var services = new ServiceCollection();
         services.AddAutoMapper(typeof(Plugin).Assembly);
-        services.AddSingleton<MainWindow>();
+
         services.AddSingleton(this);
         services.AddSingleton(TextureProvider);
         services.AddSingleton(ChatGui);
@@ -127,6 +148,8 @@ public sealed class Plugin : IDalamudPlugin
         services.AddSingleton<ForayService>();
         services.AddAllTypesImplementing<ITab>();
         services.AddAllTypesImplementing<IModule>();
+        services.AddSingleton<MainWindow>();
+        services.AddSingleton<ApiKeyWindow>();
         return services;
     }
 

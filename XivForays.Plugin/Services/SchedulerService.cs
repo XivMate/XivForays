@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
@@ -46,7 +47,7 @@ public class SchedulerService(IFramework framework, IPluginLog log) : IDisposabl
         }
         else
         {
-            log.Info("Couldn't find threadloop for: " + action.Method.Name);
+            log.Info("Couldn't find threadloop for: " + action.Method.Name + ". Remaining threads: " + string.Join(", ", threads.Keys.Select(x => x.Method.Name)));
         }
     }
 
@@ -82,7 +83,7 @@ internal class ThreadLoop
                 try
                 {
                     if (cancellationTokenSource.IsCancellationRequested)
-                        break;
+                        return;
                     action.Invoke();
                     cancellationTokenSource.Token.WaitHandle.WaitOne(interval);
                 }
