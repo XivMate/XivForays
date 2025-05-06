@@ -33,6 +33,8 @@ public sealed class Plugin : IDalamudPlugin
 
     [PluginService]
     internal static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService]
+    internal static IGameGui GameGui { get; private set; } = null!;
 
     [PluginService]
     internal static IDataManager DataManager { get; private set; } = null!;
@@ -48,6 +50,8 @@ public sealed class Plugin : IDalamudPlugin
 
     [PluginService]
     internal static IFramework Framework { get; private set; } = null!;
+    [PluginService]
+    internal static IAddonEventManager AddonEventManager { get; private set; } = null!;
 
     private const string CommandName = "/xivforays";
 
@@ -140,11 +144,14 @@ public sealed class Plugin : IDalamudPlugin
         services.AddSingleton(FateTable);
         services.AddSingleton(ObjectTable);
         services.AddSingleton(Log);
+        services.AddSingleton(AddonEventManager);
+        services.AddSingleton(GameGui);
         services.AddSingleton<FateModule>();
         services.AddSingleton<SchedulerService>();
         services.AddSingleton<TerritoryService>();
         services.AddSingleton<ApiService>();
         services.AddSingleton<EnemyTrackingService>();
+        services.AddSingleton<EnemyLocationGatherer>();
         services.AddSingleton<ForayService>();
         services.AddAllTypesImplementing<ITab>();
         services.AddAllTypesImplementing<IModule>();
