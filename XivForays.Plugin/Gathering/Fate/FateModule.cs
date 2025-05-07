@@ -45,7 +45,6 @@ public class FateModule(
             OnTerritoryChanged(clientState.TerritoryType);
             enabled = true;
             fates.Clear();
-            ;
         }
         else if (enabled && !configuration.CanCrowdsourceData)
         {

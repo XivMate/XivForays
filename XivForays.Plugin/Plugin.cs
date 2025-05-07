@@ -1,11 +1,11 @@
 ﻿using System;
-using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Fate;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using Lumina.Excel.Sheets;
 using Microsoft.Extensions.DependencyInjection;
 using XivMate.DataGathering.Forays.Dalamud.Extensions;
 using XivMate.DataGathering.Forays.Dalamud.Gathering;
@@ -33,6 +33,7 @@ public sealed class Plugin : IDalamudPlugin
 
     [PluginService]
     internal static IChatGui ChatGui { get; private set; } = null!;
+
     [PluginService]
     internal static IGameGui GameGui { get; private set; } = null!;
 
@@ -50,8 +51,12 @@ public sealed class Plugin : IDalamudPlugin
 
     [PluginService]
     internal static IFramework Framework { get; private set; } = null!;
+
     [PluginService]
     internal static IAddonEventManager AddonEventManager { get; private set; } = null!;
+
+    [PluginService]
+    public static IGameInventory GameInventory { get; private set; } = null;
 
     private const string CommandName = "/xivforays";
 
