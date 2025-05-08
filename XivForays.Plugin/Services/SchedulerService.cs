@@ -43,24 +43,28 @@ public class SchedulerService(IFramework framework, IPluginLog log) : IDisposabl
         {
             loopData.ThreadLoop.Stop();
             threads.Remove(action);
-            log.Info("Stopped threadloop for " + action.Method.Name);
+            log.Info("Stopped threadloop for " + action.Method.Name + ". Remaining threads: " +
+                     string.Join(", ", threads.Keys.Select(x => x.Method.Name)));
         }
         else
         {
-            log.Info("Couldn't find threadloop for: " + action.Method.Name + ". Remaining threads: " + string.Join(", ", threads.Keys.Select(x => x.Method.Name)));
+            log.Info("Couldn't find threadloopq for: " + action.Method.Name + ". Remaining threads: " +
+                     string.Join(", ", threads.Keys.Select(x => x.Method.Name)));
         }
     }
 
     public void Dispose()
     {
+        log.Debug("Disposing SchedulerService");
         // TODO release managed resources here
-        foreach (var threadsValue in threads.Values)
+        foreach (var thread in threads)
         {
+            var threadsValue = thread.Value;
+            log.Debug("Stopping threadloop for " + threadsValue.ThreadLoop);
             threadsValue?.ThreadLoop?.Stop();
         }
-
         threads.Clear();
-        GC.SuppressFinalize(this);
+       
     }
 }
 
@@ -69,7 +73,7 @@ internal class ThreadLoopData
     public required ThreadLoop ThreadLoop { get; init; }
 }
 
-internal class ThreadLoop
+internal class ThreadLoop : IDisposable
 {
     private Task task = null!;
     private readonly CancellationTokenSource cancellationTokenSource = new();
@@ -99,5 +103,11 @@ internal class ThreadLoop
     public void Stop()
     {
         cancellationTokenSource.Cancel();
+    }
+
+    public void Dispose()
+    {
+        task.Dispose();
+        cancellationTokenSource.Dispose();
     }
 }

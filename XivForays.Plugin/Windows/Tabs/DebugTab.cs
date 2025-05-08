@@ -1,24 +1,24 @@
-using ImGuiNET;
-using XivMate.DataGathering.Forays.Dalamud.Gathering.Fate;
-using XivMate.DataGathering.Forays.Dalamud.Services;
 using System;
 using System.Collections.Generic;
 using Dalamud.Interface.Utility.Raii;
+using ImGuiNET;
+using XivMate.DataGathering.Forays.Dalamud.Gathering.Fate;
 using XivMate.DataGathering.Forays.Dalamud.Models;
+using XivMate.DataGathering.Forays.Dalamud.Services;
 
 namespace XivMate.DataGathering.Forays.Dalamud.Windows.Tabs;
 
 public class DebugTab(FateModule fateModule, EnemyTrackingService enemyTrackingService) : ITab
 {
+    private bool Debug;
+
+    private Dictionary<ulong, EnemyPosition>? enemies;
+
     /// <inheritdoc />
     public int Index => 3;
 
     /// <inheritdoc />
     public string TabTitle => "Debug";
-
-    private bool Debug = false;
-
-    private Dictionary<ulong, EnemyPosition>? enemies = null;
 
     /// <inheritdoc />
     public void Draw(Configuration.Configuration configuration)
@@ -29,8 +29,6 @@ public class DebugTab(FateModule fateModule, EnemyTrackingService enemyTrackingS
         if (ImGui.Checkbox("##CrowdsourceData", ref Debug)) { }
 
         if (Debug)
-
-
         {
             enemies = enemyTrackingService.UpdateAndGetEnemies();
             ImGui.Text($"Enemies on map {enemies.Count}");

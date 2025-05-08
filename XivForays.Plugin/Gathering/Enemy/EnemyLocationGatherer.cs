@@ -118,6 +118,8 @@ public class EnemyLocationGatherer(
     {
         schedulerService.CancelScheduledTask(EnemyTick);
         schedulerService.CancelScheduledTask(EnemyUpload);
-        GC.SuppressFinalize(this);
+        _enemyQueue.Clear();
+        _lastSnapshot.Clear();
+        _enabled = false;
     }
 }

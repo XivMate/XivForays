@@ -1,44 +1,55 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
-using XivMate.DataGathering.Forays.Dalamud.Windows.Tabs;
 
 namespace XivMate.DataGathering.Forays.Dalamud.Windows;
 
 public class ApiKeyWindow : Window, IDisposable
 {
+    private readonly Plugin plugin;
     private readonly IPluginLog log;
-    private Configuration.Configuration Configuration;
+    private readonly Configuration.Configuration configuration;
 
     public ApiKeyWindow(Plugin plugin, IPluginLog log) :
         base("XivForays API Key")
     {
+        this.plugin = plugin;
         this.log = log;
-        Configuration = plugin.Configuration;
+        configuration = plugin.Configuration;
         Size = new Vector2(600, 250);
+        key = configuration.SystemConfiguration.ApiKey;
+        canCrowdSourceData = configuration.CanCrowdsourceData;
     }
 
     public void Dispose() { }
+    private string key;
+    private bool canCrowdSourceData;
 
     public override void Draw()
     {
-        log.Debug("Drawing ApiKeyWindow");
-        ImGui.Text("Api Key");
-        var key = Configuration.SystemConfiguration.ApiKey;
-        if (ImGui.InputText("##ApiKey", ref key, 100))
+        if (ImGui.Checkbox("Enable Crowdsourcing data", ref canCrowdSourceData))
         {
-            Configuration.SystemConfiguration.ApiKey = key.Trim();
+            log.Debug($"CanCrowdsourceData updated to {canCrowdSourceData}");
         }
+
+        if (ImGui.InputText("Api Key##ApiKey", ref key, 36))
+        {
+            key = key.Trim();
+            log.Debug($"ApiKey updated to {key}");
+        }
+
         if (ImGui.Button("Save"))
         {
-            Configuration.SystemConfiguration.ApiKey = key;
-            log.Information($"Saving API Key: {Configuration.SystemConfiguration.ApiKey}");
-            Configuration.Save();
+            configuration.SystemConfiguration.ApiKey = key;
+            log.Debug($"Saving API Key: '{configuration.SystemConfiguration.ApiKey}'");
+            configuration.CanCrowdsourceData = canCrowdSourceData;
+            log.Debug($"Saving CanCrowdsourceData: '{configuration.CanCrowdsourceData}'");
+            configuration.Save();
             Toggle();
+            plugin.ReloadModules();
+            log.Info("Saved configuration");
         }
     }
 }

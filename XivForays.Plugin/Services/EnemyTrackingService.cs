@@ -303,6 +303,7 @@ public class EnemyTrackingService
     public void Dispose()
     {
         clientState.TerritoryChanged -= OnTerritoryChanged;
+
         GC.SuppressFinalize(this);
     }
 }

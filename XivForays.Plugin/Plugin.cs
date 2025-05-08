@@ -72,7 +72,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration.Configuration ??
                         new Configuration.Configuration();
-
+        
         var resourcesPath = PluginInterface.AssemblyLocation.Directory?.FullName!;
 
         SetupServices();
@@ -175,6 +175,10 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.RemoveHandler(CommandName);
         provider.Dispose();
+        PluginInterface.UiBuilder.Draw -= DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUI;
+        PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUI;
+        
     }
 
     private void OnCommand(string command, string args)
@@ -190,4 +194,10 @@ public sealed class Plugin : IDalamudPlugin
 
     public void ToggleConfigUI() => ConfigWindow.Toggle();
     public void ToggleMainUI() => MainWindow.Toggle();
+
+    public void ReloadModules()
+    {
+        foreach(var module in provider.GetServices<IModule>())
+            module.LoadConfig(Configuration);
+    }
 }

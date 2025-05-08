@@ -20,14 +20,8 @@ public class ConfigWindow : Window, IDisposable
     {
         this.log = log;
         this.tabs = tabs.OrderBy(t => t.Index).ToList();
-        log.Info($"Config Window has {this.tabs?.Count()} tabs");
-        foreach (var tab in this.tabs)
-        {
-            log.Info($"Tab: {tab.TabTitle} - Index: {tab.Index}");
-        }   
 
         SizeCondition = ImGuiCond.Always;
-
         Configuration = plugin.Configuration;
     }
 

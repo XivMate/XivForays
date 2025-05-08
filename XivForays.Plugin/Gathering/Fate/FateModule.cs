@@ -216,6 +216,5 @@ public class FateModule(
         clientState.TerritoryChanged -= OnTerritoryChanged;
         schedulerService.CancelScheduledTask(FateTick);
         schedulerService.CancelScheduledTask(FateUpload);
-        GC.SuppressFinalize(this);
     }
 }
