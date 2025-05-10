@@ -12,7 +12,7 @@ using XivMate.DataGathering.Forays.Dalamud.Models;
 
 namespace XivMate.DataGathering.Forays.Dalamud.Services;
 
-public class EnemyTrackingService
+public class EnemyTrackingService : IDisposable // Add IDisposable
 {
     private readonly IClientState clientState;
     private readonly IObjectTable objectTable;
@@ -23,6 +23,7 @@ public class EnemyTrackingService
     private Guid _instanceGuid = Guid.NewGuid();
 
     private readonly Dictionary<ulong, EnemyPosition> _enemies = new();
+    private bool _disposed = false; // Add this line
 
     // Dictionary to track which NPC IDs have been observed in combat
     private readonly Dictionary<ulong, bool> _inCombatHistory = new();
@@ -61,7 +62,7 @@ public class EnemyTrackingService
             _instanceGuid = Guid.NewGuid();
             _inCombatHistory.Clear();
             _enemies.Clear();
-            
+
             log.Info(
                 $"[ETS] Foray territory: {territoryName}, local guid: {_instanceGuid}, local territory {clientState.TerritoryType}, map {clientState.MapId}");
         }
@@ -109,7 +110,7 @@ public class EnemyTrackingService
             log.Error($"Error in UpdateAndGetEnemies: {ex.Message}, {ex.StackTrace}");
             log.Error(ex.InnerException?.Message);
             log.Error(JsonConvert.SerializeObject(ex));
-            
+
             return new Dictionary<ulong, EnemyPosition>();
         }
     }
@@ -302,8 +303,28 @@ public class EnemyTrackingService
     /// </summary>
     public void Dispose()
     {
-        clientState.TerritoryChanged -= OnTerritoryChanged;
-
+        Dispose(true); // Call the new Dispose method
         GC.SuppressFinalize(this);
+    }
+
+    // Add the protected virtual Dispose method
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Unsubscribe from events
+            clientState.TerritoryChanged -= OnTerritoryChanged;
+
+            // Clear collections
+            _enemies.Clear();
+            _inCombatHistory.Clear();
+        }
+
+        // Dispose unmanaged resources here if any
+
+        _disposed = true;
     }
 }

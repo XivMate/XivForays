@@ -29,6 +29,7 @@ public class FateModule(
 
     private bool enabled = false;
     public bool Enabled => enabled;
+    private bool _disposed = false; // Add this line
 
     public IEnumerable<Models.Fate> ActiveFates => fates.Values.ToList();
 
@@ -66,8 +67,8 @@ public class FateModule(
         }
 
         var territory = territoryService.GetTerritoryForId(territoryId);
-        log.Info($"Current territory id is: ", territoryId);
-        log.Info("Territory Placename is : ", territory?.PlaceName.ValueNullable);
+        log.Debug($"Current territory id is: ", territoryId);
+        log.Debug("Territory Placename is : ", territory?.PlaceName.ValueNullable);
         if (territory?.PlaceName.ValueNullable.HasValue ?? false)
         {
             string territoryName = territory.Value.PlaceName.Value.Name.ToString();
@@ -213,8 +214,28 @@ public class FateModule(
     /// </summary>
     public void Dispose()
     {
-        clientState.TerritoryChanged -= OnTerritoryChanged;
-        schedulerService.CancelScheduledTask(FateTick);
-        schedulerService.CancelScheduledTask(FateUpload);
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Unsubscribe from events and cancel tasks
+            clientState.TerritoryChanged -= OnTerritoryChanged;
+            schedulerService.CancelScheduledTask(FateTick);
+            schedulerService.CancelScheduledTask(FateUpload);
+            // Clear collections if they contain disposable items or to release memory
+            fates.Clear();
+            while (fateQueue.TryDequeue(out _)) { }
+        }
+
+        // Unmanaged resources would be disposed here if any
+
+        _disposed = true;
     }
 }

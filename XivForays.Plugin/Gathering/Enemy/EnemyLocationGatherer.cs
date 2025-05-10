@@ -22,6 +22,7 @@ public class EnemyLocationGatherer(
 
     private bool _enabled = false;
     public bool Enabled => _enabled;
+    private bool _disposed = false; // Add this line
 
     /// <summary>
     /// Loads configuration and enables/disables the module accordingly
@@ -61,7 +62,8 @@ public class EnemyLocationGatherer(
             {
                 _enemyQueue.Enqueue(currentEnemies.Select(e => mapper.Map(e.Value, new EnemyPosition())).ToList());
             }
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             log.Warning($"Error processing enemy data: {ex.Message}");
         }
@@ -116,10 +118,27 @@ public class EnemyLocationGatherer(
     /// </summary>
     public void Dispose()
     {
-        schedulerService.CancelScheduledTask(EnemyTick);
-        schedulerService.CancelScheduledTask(EnemyUpload);
-        _enemyQueue.Clear();
-        _lastSnapshot.Clear();
-        _enabled = false;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Cancel scheduled tasks
+            schedulerService.CancelScheduledTask(EnemyTick);
+            schedulerService.CancelScheduledTask(EnemyUpload);
+
+            // Clear collections
+            _enemyQueue.Clear(); // Or use while(TryDequeue)
+            _lastSnapshot.Clear();
+        }
+
+        _enabled = false; 
+        _disposed = true;
     }
 }
