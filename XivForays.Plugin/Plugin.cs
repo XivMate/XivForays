@@ -78,18 +78,16 @@ public sealed class Plugin : IDalamudPlugin
         SetupServices();
         InitializeModules();
 
-        MainWindow =
-            provider?.GetService<MainWindow>() ??
-            throw new InvalidOperationException(); //new MainWindow(this, provider.GetService<TerritoryService>());
-        ApiKeyWindow =
-            provider.GetService<ApiKeyWindow>() ??
-            throw new InvalidOperationException(); //new MainWindow(this, provider.GetService<TerritoryService>());
-
-        RegisterCommands();
-
+        MainWindow = provider?.GetService<MainWindow>() ?? throw new InvalidOperationException();
+        ApiKeyWindow = provider.GetService<ApiKeyWindow>() ?? throw new InvalidOperationException();
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
+        
+        
+        RegisterCommands();
+
+
 
         var tabs = provider.GetServices<ITab>();
         ConfigWindow = new ConfigWindow(this, tabs, Log);
@@ -150,6 +148,7 @@ public sealed class Plugin : IDalamudPlugin
         services.AddSingleton(ObjectTable);
         services.AddSingleton(Log);
         services.AddSingleton(AddonEventManager);
+        services.AddSingleton(GameInventory);
         services.AddSingleton(GameGui);
         services.AddSingleton<FateModule>();
         services.AddSingleton<SchedulerService>();
@@ -179,7 +178,6 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUI;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUI;
-
     }
 
     private void OnCommand(string command, string args)
