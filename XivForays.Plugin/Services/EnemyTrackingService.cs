@@ -271,7 +271,7 @@ public class EnemyTrackingService : IDisposable // Add IDisposable
                 };
 
                 _enemies.Add(npcId, newEnemy);
-                log.Debug(
+                log.Verbose(
                     $"Added new enemy: {newEnemy.MobName} (ID: {newEnemy.MobIngameId}, Level: {newEnemy.Level}, In Combat: {newEnemy.IsInCombat})");
             }
         }
@@ -287,13 +287,13 @@ public class EnemyTrackingService : IDisposable // Add IDisposable
                                       .Where(id => !objectTable.Any(obj => obj is IBattleNpc battleNpc &&
                                                                            battleNpc.GameObjectId == id))
                                       .ToList();
-        log.Debug($"Found {outdatedEnemies.Count} outdated enemies to remove of {_enemies.Count} total enemies");
+        log.Verbose($"Found {outdatedEnemies.Count} outdated enemies to remove of {_enemies.Count} total enemies");
         foreach (var enemyId in outdatedEnemies)
         {
             var outdatedEnemy = _enemies[enemyId];
             if (_enemies.Remove(enemyId))
             {
-                log.Debug($"Removed outdated enemy: {outdatedEnemy.MobName} (ID: {outdatedEnemy.MobIngameId})");
+                log.Verbose($"Removed outdated enemy: {outdatedEnemy.MobName} (ID: {outdatedEnemy.MobIngameId})");
             }
         }
     }

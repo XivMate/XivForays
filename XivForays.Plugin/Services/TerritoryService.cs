@@ -15,7 +15,7 @@ public class TerritoryService : IDisposable
 
     private ImmutableList<TerritoryType> GetForayIds()
     {
-        var forayNames = new[] { "Eureka", "Zadnor", "Bozja Southern Front" };
+        var forayNames = new[] { "Eureka", "Zadnor", "Bozjan Southern Front","South Horn" };
         return dataManager.GameData.GetExcelSheet<TerritoryType>()!
                           .Where(p => forayNames.Any(forayName => p.PlaceName.ToString()?.Contains(forayName) ?? false))
                           .ToImmutableList();

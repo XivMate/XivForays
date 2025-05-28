@@ -36,7 +36,7 @@ public class ForayService : IDisposable
 
     private bool IsForayTerritory(TerritoryType? territoryType)
     {
-        var forayNames = new[] { "Eureka", "Zadnor", "Bozjan Southern Front" };
+        var forayNames = new[] { "Eureka", "Zadnor", "Bozjan Southern Front","South Horn" };
         return territoryType != null &&
                forayNames.Any(p => territoryType?.PlaceName.Value.Name.ExtractText().Contains(p) ?? false);
     }
